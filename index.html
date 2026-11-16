@@ -72,14 +72,18 @@
 
       <!-- ===== Historial CMR ===== -->
       <section id="cmr-section" class="cmr-section hidden">
-        <div class="cmr-head">
-          <h3>💳 Historial CMR Mastercard</h3>
+        <button id="cmr-toggle" class="cmr-head" type="button" aria-expanded="false">
+          <span class="cmr-badge">CMR</span>
+          <span class="cmr-title">Historial CMR Mastercard</span>
           <span id="cmr-resumen" class="cmr-resumen"></span>
+          <span class="cmr-chevron">▸</span>
+        </button>
+        <div id="cmr-body" class="cmr-body hidden">
+          <div class="cmr-chart-wrap">
+            <canvas id="cmr-chart" height="200"></canvas>
+          </div>
+          <ul id="cmr-list" class="cmr-list"></ul>
         </div>
-        <div class="cmr-chart-wrap">
-          <canvas id="cmr-chart" height="200"></canvas>
-        </div>
-        <ul id="cmr-list" class="cmr-list"></ul>
       </section>
     </section>
 

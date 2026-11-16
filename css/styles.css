@@ -139,10 +139,15 @@ input,textarea{font-family:inherit;font-size:16px}
 .empty{color:var(--paper);text-align:center;opacity:.85;padding:30px 10px;font-size:14px}
 
 /* ===== Historial CMR ===== */
-.cmr-section{margin-top:22px;background:var(--paper);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
-.cmr-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.cmr-head h3{font-size:16px;color:var(--cork-dark)}
-.cmr-resumen{font-size:12px;color:var(--muted)}
+.cmr-section{margin-top:22px;background:var(--paper);border-radius:14px;padding:6px;box-shadow:var(--shadow)}
+.cmr-head{display:flex;align-items:center;gap:10px;width:100%;background:none;padding:10px 8px;border-radius:12px;text-align:left}
+.cmr-head:active{background:var(--accent-soft)}
+.cmr-badge{flex:0 0 auto;background:#3DAE2B;color:#fff;font-weight:800;font-size:12px;letter-spacing:1px;padding:6px 8px;border-radius:8px;box-shadow:var(--shadow)}
+.cmr-title{font-size:15px;font-weight:600;color:var(--cork-dark)}
+.cmr-resumen{font-size:11px;color:var(--muted);margin-left:auto;text-align:right}
+.cmr-chevron{flex:0 0 auto;color:var(--muted);font-size:14px;transition:transform .2s}
+.cmr-head[aria-expanded="true"] .cmr-chevron{transform:rotate(90deg)}
+.cmr-body{padding:8px 8px 4px}
 .cmr-chart-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 #cmr-chart{display:block}
 .cmr-list{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:2px;max-height:280px;overflow-y:auto}

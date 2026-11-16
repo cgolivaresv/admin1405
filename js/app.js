@@ -308,6 +308,8 @@ function renderNotas(snap) {
 // ============================================================
 //  HISTORIAL CMR (lee de Firestore; datos privados, no en el repo)
 // ============================================================
+let cmrState = null;
+
 function renderCmr(snap) {
   const sec = $("cmr-section");
   const data = [];
@@ -318,8 +320,9 @@ function renderCmr(snap) {
   const totales = data.map((r) => Number(r.total) || 0);
   const prom = Math.round(totales.reduce((a, b) => a + b, 0) / totales.length);
   const max = Math.max(...totales), min = Math.min(...totales);
-  $("cmr-resumen").textContent =
-    `${data.length} meses · prom ${fmtMonto(prom)} · máx ${fmtMonto(max)}`;
+  cmrState = { data, prom, max, min };
+
+  $("cmr-resumen").textContent = `${data.length} meses · prom ${fmtMonto(prom)}`;
 
   // --- lista mensual ---
   const list = $("cmr-list");
@@ -333,9 +336,19 @@ function renderCmr(snap) {
     list.appendChild(li);
   });
 
-  // --- gráfico de barras (canvas) ---
-  drawCmrChart(data, max, prom);
+  // dibujar solo si el panel está abierto (el canvas necesita ancho visible)
+  if (!$("cmr-body").classList.contains("hidden")) {
+    drawCmrChart(data, max, prom);
+  }
 }
+
+// desplegar / plegar el historial
+$("cmr-toggle").addEventListener("click", () => {
+  const body = $("cmr-body");
+  const abierto = body.classList.toggle("hidden") === false;
+  $("cmr-toggle").setAttribute("aria-expanded", abierto ? "true" : "false");
+  if (abierto && cmrState) drawCmrChart(cmrState.data, cmrState.max, cmrState.prom);
+});
 
 function drawCmrChart(data, max, prom) {
   const canvas = $("cmr-chart");
