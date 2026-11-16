@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#8b5a2b" />
+  <meta name="theme-color" content="#F6F3EB" />
   <title>Admin 1405</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icons/icon-192.png" />
@@ -14,7 +14,7 @@
   <!-- ===== Pantalla de carga ===== -->
   <div id="splash" class="splash">
     <div class="splash-card">
-      <div class="splash-logo">📌</div>
+      <div class="splash-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></div>
       <div class="splash-title">Admin 1405</div>
       <div class="splash-sub">Cargando…</div>
     </div>
@@ -23,7 +23,7 @@
   <!-- ===== Login ===== -->
   <section id="login" class="login hidden">
     <form id="login-form" class="login-card" autocomplete="on">
-      <div class="login-logo">📌</div>
+      <div class="login-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></div>
       <h1 class="login-title">Admin 1405</h1>
       <p class="login-sub">Nuestro diario mural</p>
       <label class="field">
@@ -45,7 +45,7 @@
   <main id="app" class="app hidden">
     <header class="topbar">
       <div class="topbar-left">
-        <span class="topbar-logo">📌</span>
+        <span class="topbar-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span>
         <span class="topbar-title">Admin 1405</span>
       </div>
       <div class="topbar-right">
@@ -57,7 +57,7 @@
     <!-- ===== Sección: Cuentas ===== -->
     <section id="tab-cuentas" class="tab">
       <div class="section-head">
-        <h2>💳 Cuentas</h2>
+        <h2><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 8h15a2 2 0 0 1 2 2v2h-5a2 2 0 0 0 0 4h5"/><path d="M16 14h.01"/></svg></span> Cuentas</h2>
         <div id="cuentas-resumen" class="resumen"></div>
       </div>
 
@@ -65,7 +65,7 @@
         <input type="text" id="cuenta-nombre" placeholder="Nombre (ej: Luz, Agua, Internet)" required />
         <input type="number" id="cuenta-monto" placeholder="Monto $" min="0" step="1" />
         <input type="date" id="cuenta-venc" />
-        <button type="submit" class="btn-add">Agregar</button>
+        <button type="submit" class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Agregar</button>
       </form>
 
       <ul id="cuentas-list" class="card-list"></ul>
@@ -77,7 +77,7 @@
           <span class="cmr-badge">CMR</span>
           <span class="cmr-title">Historial CMR Mastercard</span>
           <span id="cmr-resumen" class="cmr-resumen"></span>
-          <span class="cmr-chevron">▸</span>
+          <span class="cmr-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
         </button>
         <div id="cmr-body" class="cmr-body hidden">
           <div class="cmr-chart-wrap">
@@ -91,14 +91,14 @@
     <!-- ===== Sección: Supermercado ===== -->
     <section id="tab-compras" class="tab hidden">
       <div class="section-head">
-        <h2>🛒 Supermercado</h2>
+        <h2><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 2 10h14l2-10H3Z"/><path d="m8 10 4-7m4 7-4-7M7 14v3m5-3v3m5-3v3"/></svg></span> Supermercado</h2>
         <button id="limpiar-comprados" class="btn-ghost small">Quitar comprados</button>
       </div>
 
       <form id="compra-form" class="row-form">
         <input type="text" id="compra-item" placeholder="¿Qué falta comprar?" required />
         <input type="text" id="compra-cant" placeholder="Cant." class="cant" />
-        <button type="submit" class="btn-add">Agregar</button>
+        <button type="submit" class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Agregar</button>
       </form>
 
       <ul id="compras-list" class="check-list"></ul>
@@ -108,8 +108,8 @@
     <!-- ===== Sección: Notas / Diario mural ===== -->
     <section id="tab-notas" class="tab hidden">
       <div class="section-head">
-        <h2>📝 Información</h2>
-        <button id="nueva-nota" class="btn-add">+ Nota</button>
+        <h2><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1Z"/><path d="M8 4v4H4m5 4h8m-8 4h6"/></svg></span> Información</h2>
+        <button id="nueva-nota" class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Nota</button>
       </div>
       <div id="notas-board" class="notas-board"></div>
       <p class="empty" id="notas-empty">Aún no hay notas en el mural.</p>
@@ -120,13 +120,13 @@
     <!-- ===== Navegación inferior ===== -->
     <nav class="tabbar">
       <button class="tabbar-btn active" data-tab="cuentas">
-        <span class="ic">💳</span><span>Cuentas</span>
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 8h15a2 2 0 0 1 2 2v2h-5a2 2 0 0 0 0 4h5"/><path d="M16 14h.01"/></svg></span><span>Cuentas</span>
       </button>
       <button class="tabbar-btn" data-tab="compras">
-        <span class="ic">🛒</span><span>Súper</span>
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 2 10h14l2-10H3Z"/><path d="m8 10 4-7m4 7-4-7M7 14v3m5-3v3m5-3v3"/></svg></span><span>Súper</span>
       </button>
       <button class="tabbar-btn" data-tab="notas">
-        <span class="ic">📝</span><span>Notas</span>
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1Z"/><path d="M8 4v4H4m5 4h8m-8 4h6"/></svg></span><span>Notas</span>
       </button>
     </nav>
   </main>

@@ -21,7 +21,7 @@ const db = getFirestore(app);
 setPersistence(auth, browserLocalPersistence);
 
 // Versión de la app (mostrada al pie)
-const APP_VERSION = "v1.4.0";
+const APP_VERSION = "v1.5.0";
 document.querySelectorAll("#app-footer, #login-version")
   .forEach((el) => { el.textContent = "Admin 1405 · " + APP_VERSION; });
 
@@ -120,6 +120,11 @@ const fmtFecha = (d) => {
   return `${day}/${m}`;
 };
 
+// Íconos SVG lineales (Home & Harmony), reutilizables en render
+const SVG_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>';
+const SVG_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>';
+const SVG_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>';
+
 // ============================================================
 //  SECCIÓN: CUENTAS
 // ============================================================
@@ -153,16 +158,16 @@ function renderCuentas(snap) {
     li.className = "cuenta" + (c.pagada ? " pagada" : "");
     const vencida = !c.pagada && c.venc && c.venc !== "9999-12-31" && c.venc < hoy;
     li.innerHTML = `
-      <button class="cuenta-check" data-act="toggle">${c.pagada ? "✓" : ""}</button>
+      <button class="cuenta-check" data-act="toggle">${c.pagada ? SVG_CHECK : ""}</button>
       <div class="cuenta-body">
         <div class="cuenta-nombre"></div>
         <div class="cuenta-meta">
-          ${c.venc && c.venc !== "9999-12-31" ? `<span class="cuenta-venc ${vencida ? "vencida" : ""}">📅 ${fmtFecha(c.venc)}${vencida ? " ¡vencida!" : ""}</span>` : ""}
+          ${c.venc && c.venc !== "9999-12-31" ? `<span class="cuenta-venc ${vencida ? "vencida" : ""}">${SVG_CAL} ${fmtFecha(c.venc)}${vencida ? " ¡vencida!" : ""}</span>` : ""}
           <span>· ${c.createdBy || ""}</span>
         </div>
       </div>
       <span class="cuenta-monto">${fmtMonto(c.monto)}</span>
-      <button class="cuenta-del" data-act="del" aria-label="Eliminar">🗑️</button>
+      <button class="cuenta-del" data-act="del" aria-label="Eliminar">${SVG_TRASH}</button>
     `;
     li.querySelector(".cuenta-nombre").textContent = c.nombre;
     li.querySelector('[data-act="toggle"]').onclick = () =>
@@ -214,10 +219,10 @@ function renderCompras(snap) {
     const li = document.createElement("li");
     li.className = "compra" + (c.comprado ? " comprado" : "");
     li.innerHTML = `
-      <button class="compra-check" data-act="toggle">${c.comprado ? "✓" : ""}</button>
+      <button class="compra-check" data-act="toggle">${c.comprado ? SVG_CHECK : ""}</button>
       <span class="compra-text"></span>
       ${c.cant ? `<span class="compra-cant"></span>` : ""}
-      <button class="cuenta-del" data-act="del" aria-label="Eliminar">🗑️</button>
+      <button class="cuenta-del" data-act="del" aria-label="Eliminar">${SVG_TRASH}</button>
     `;
     li.querySelector(".compra-text").textContent = c.item;
     if (c.cant) li.querySelector(".compra-cant").textContent = c.cant;
@@ -232,7 +237,7 @@ function renderCompras(snap) {
 // ============================================================
 //  SECCIÓN: NOTAS / DIARIO MURAL
 // ============================================================
-const COLORES = ["#fff7a8", "#ffd6a5", "#caffbf", "#a0e7ff", "#ffc6e5", "#e0d4ff"];
+const COLORES = ["#E9EFE7", "#F2ECE3", "#F6EAE4", "#E8EAE3", "#E4ECEC", "#EFEAF0"];
 let notaEditId = null;
 let notaColor = COLORES[0];
 
@@ -292,7 +297,7 @@ function renderNotas(snap) {
     el.className = "nota";
     el.style.background = n.color || COLORES[0];
     el.innerHTML = `
-      <button class="nota-del" data-act="del" aria-label="Eliminar">🗑️</button>
+      <button class="nota-del" data-act="del" aria-label="Eliminar">${SVG_TRASH}</button>
       <div class="nota-titulo"></div>
       <div class="nota-contenido"></div>
       <div class="nota-meta"></div>
@@ -373,7 +378,7 @@ function drawCmrChart(data, max, prom) {
   const yFor = (v) => padTop + chartH * (1 - v / max);
 
   // línea de promedio
-  ctx.strokeStyle = "#c0492f";
+  ctx.strokeStyle = "#C98770";
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
   ctx.moveTo(padL, yFor(prom));
@@ -388,12 +393,12 @@ function drawCmrChart(data, max, prom) {
     const bh = chartH * (r.total / max);
     const y = padTop + chartH - bh;
     // barra
-    ctx.fillStyle = r.total === max ? "#c0492f" : "#8b5a2b";
+    ctx.fillStyle = r.total === max ? "#B96F69" : "#667D68";
     ctx.fillRect(x, y, barW, bh);
     // etiqueta de mes cada 3
     if (i % 3 === 0 || i === data.length - 1) {
       ctx.save();
-      ctx.fillStyle = "#7a6f63";
+      ctx.fillStyle = "#788078";
       ctx.translate(x + barW / 2, h - padBot + 4);
       ctx.rotate(-Math.PI / 4);
       ctx.textAlign = "right";
