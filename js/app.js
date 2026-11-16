@@ -26,7 +26,7 @@ const db = getFirestore(app);
 setPersistence(auth, browserLocalPersistence);
 
 // Versión de la app (mostrada al pie)
-const APP_VERSION = "v1.10.0";
+const APP_VERSION = "v1.11.0";
 document.querySelectorAll("#app-footer, #login-version")
   .forEach((el) => { el.textContent = "Admin 1405 · " + APP_VERSION; });
 
@@ -165,6 +165,40 @@ $("tema-btn").addEventListener("click", () => {
   try { localStorage.setItem(THEME_KEY, tema); } catch (e) {}
   aplicarTema(tema);
 });
+
+// ============================================================
+//  RECARGAR / ACTUALIZAR — toma la versión nueva sin salir de la app
+// ============================================================
+let _toastT = null;
+function toast(msg, ms = 2600) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.remove("hidden");
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => t.classList.add("hidden"), ms);
+}
+async function recargarApp() {
+  $("recargar-btn").classList.add("girando");
+  toast("Buscando actualización…", 4000);
+  try {
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        await reg.update();
+        const nuevo = reg.installing || reg.waiting;
+        if (nuevo) {
+          // hay versión nueva: actívala y recarga cuando tome control
+          navigator.serviceWorker.addEventListener("controllerchange", () => location.reload(), { once: true });
+          nuevo.postMessage({ type: "SKIP_WAITING" });
+          setTimeout(() => location.reload(), 1800); // respaldo
+          return;
+        }
+      }
+    }
+  } catch (e) {}
+  location.reload();
+}
+$("recargar-btn").addEventListener("click", recargarApp);
 
 // ============================================================
 //  FOTOS — compresión en el dispositivo + visor + control reutilizable

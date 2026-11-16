@@ -1,7 +1,7 @@
 // Service worker de Admin 1405
 // Estrategia: cache del "cascarón" de la app (shell) para que abra
 // offline; los datos (Firestore) se manejan en línea por el SDK.
-const CACHE = "admin1405-v11";
+const CACHE = "admin1405-v12";
 const SHELL = [
   "./",
   "./index.html",
@@ -14,6 +14,11 @@ const SHELL = [
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
+
+// Permite que la app pida activar de inmediato la versión nueva
+self.addEventListener("message", (e) => {
+  if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
+});
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
