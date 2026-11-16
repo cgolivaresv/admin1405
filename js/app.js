@@ -26,7 +26,7 @@ const db = getFirestore(app);
 setPersistence(auth, browserLocalPersistence);
 
 // Versión de la app (mostrada al pie)
-const APP_VERSION = "v1.8.0";
+const APP_VERSION = "v1.9.0";
 document.querySelectorAll("#app-footer, #login-version")
   .forEach((el) => { el.textContent = "Admin 1405 · " + APP_VERSION; });
 
@@ -117,6 +117,7 @@ function startListeners() {
   unsubs.push(onSnapshot(collection(db, "productos"), onProductos));
   unsubs.push(onSnapshot(query(collection(db, "notas"), orderBy("createdAt", "desc")), renderNotas));
   unsubs.push(onSnapshot(query(collection(db, "cmr_gastos"), orderBy("periodo", "asc")), renderCmr));
+  unsubs.push(onSnapshot(query(collection(db, "nuevosur"), orderBy("periodo", "asc")), renderNuevosur));
   unsubs.push(onSnapshot(query(collection(db, "splid_personas"), orderBy("nombre", "asc")), onSpPersonas));
   unsubs.push(onSnapshot(query(collection(db, "splid_gastos"), orderBy("createdAt", "desc")), onSpGastos));
 }
@@ -786,6 +787,74 @@ $("cmr-file").addEventListener("change", async (e) => {
     estado.textContent = `Guardado: ${datos.mes} · ${fmtMonto(datos.total)}`;
   } catch (err) {
     estado.textContent = "No se pudo leer el PDF. Usa \"Agregar mes\" para ingresarlo a mano.";
+  }
+});
+
+// ============================================================
+//  HISTORIAL MENSUAL GENÉRICO (Nuevosur)
+//  Mismo patrón que CMR: panel desplegable con gráfico, lista,
+//  "Agregar mes" y edición. Datos privados en Firestore.
+//  coll/{YYYY-MM}: { periodo, mes, total }
+// ============================================================
+function crearHistorialMensual({ coll, titulo, ids }) {
+  const guardar = (periodo, total) =>
+    setDoc(doc(db, coll, periodo), { periodo, mes: mesLabel(periodo), total });
+
+  function editar(r) {
+    abrirEditor({
+      titulo: r ? `${titulo} ${r.mes || r.periodo}` : `Agregar mes · ${titulo}`,
+      campos: [
+        ...(r ? [] : [{ id: "periodo", label: "Mes de la boleta", type: "month", value: fechaLocal().slice(0, 7) }]),
+        { id: "total", label: "Monto $", type: "number", value: r ? r.total : "" }
+      ],
+      onSave: async (v) => {
+        const periodo = r ? r.periodo : v.periodo;
+        if (!/^\d{4}-\d{2}$/.test(periodo || "")) return "Elige el mes.";
+        if (v.total === "" || Number(v.total) < 0) return "Ingresa el monto.";
+        await guardar(periodo, Number(v.total));
+      },
+      onDelete: r ? async () => {
+        if (!confirm(`¿Eliminar ${r.mes || r.periodo} del historial?`)) return false;
+        await deleteDoc(doc(db, coll, r.periodo));
+      } : null
+    });
+  }
+
+  let data = [];
+  const items = () => data.map((r) => ({ label: r.mes || r.periodo, total: Number(r.total) || 0 }));
+
+  panelDesplegable(ids.toggle, ids.body, () => drawBars($(ids.chart), items()));
+  $(ids.add).addEventListener("click", () => editar(null));
+
+  return function render(snap) {
+    data = [];
+    snap.forEach((d) => data.push(d.data()));
+    const list = $(ids.list);
+    list.innerHTML = "";
+    if (!data.length) { $(ids.resumen).textContent = "Sin datos"; return; }
+    const totales = data.map((r) => Number(r.total) || 0);
+    const prom = Math.round(totales.reduce((a, b) => a + b, 0) / totales.length);
+    const max = Math.max(...totales), min = Math.min(...totales);
+    $(ids.resumen).textContent = `${data.length} meses · prom ${fmtMonto(prom)}`;
+    [...data].reverse().forEach((r) => {
+      const li = document.createElement("li");
+      li.className = "cmr-row editable" + (r.total === max ? " alto" : r.total === min ? " bajo" : "");
+      li.innerHTML = `<span class="mes"></span><span class="val"></span>`;
+      li.querySelector(".mes").textContent = r.mes || r.periodo;
+      li.querySelector(".val").textContent = fmtMonto(r.total);
+      li.onclick = () => editar(r);
+      list.appendChild(li);
+    });
+    if (!$(ids.body).classList.contains("hidden")) drawBars($(ids.chart), items());
+  };
+}
+
+const renderNuevosur = crearHistorialMensual({
+  coll: "nuevosur",
+  titulo: "Nuevosur",
+  ids: {
+    toggle: "nsur-toggle", body: "nsur-body", chart: "nsur-chart",
+    list: "nsur-list", resumen: "nsur-resumen", add: "nsur-add"
   }
 });
 
