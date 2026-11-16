@@ -26,7 +26,7 @@ const db = getFirestore(app);
 setPersistence(auth, browserLocalPersistence);
 
 // Versión de la app (mostrada al pie)
-const APP_VERSION = "v1.9.0";
+const APP_VERSION = "v1.10.0";
 document.querySelectorAll("#app-footer, #login-version")
   .forEach((el) => { el.textContent = "Admin 1405 · " + APP_VERSION; });
 
@@ -144,17 +144,138 @@ const SVG_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const SVG_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>';
 
 // ============================================================
+//  TEMA (claro / oscuro) — preferencia por dispositivo
+// ============================================================
+const THEME_KEY = "admin1405-tema";
+function aplicarTema(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = t === "dark" ? "#181D19" : "#F6F3EB";
+  $("tema-luna").classList.toggle("hidden", t === "dark");
+  $("tema-sol").classList.toggle("hidden", t !== "dark");
+}
+let tema = (() => {
+  try { return localStorage.getItem(THEME_KEY) ||
+    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }
+  catch (e) { return "light"; }
+})();
+aplicarTema(tema);
+$("tema-btn").addEventListener("click", () => {
+  tema = tema === "dark" ? "light" : "dark";
+  try { localStorage.setItem(THEME_KEY, tema); } catch (e) {}
+  aplicarTema(tema);
+});
+
+// ============================================================
+//  FOTOS — compresión en el dispositivo + visor + control reutilizable
+//  La imagen se guarda comprimida (JPEG) como dataURL en el documento.
+// ============================================================
+function verFoto(url) {
+  $("foto-viewer-img").src = url;
+  $("foto-viewer").classList.remove("hidden");
+}
+$("foto-viewer").addEventListener("click", () => {
+  $("foto-viewer").classList.add("hidden");
+  $("foto-viewer-img").src = "";
+});
+
+// Redimensiona a máx. maxDim y baja la calidad JPEG hasta caber en ~maxBytes.
+async function comprimirImagen(file, { maxDim = 1400, maxBytes = 450000 } = {}) {
+  let img;
+  try {
+    img = await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch (e) {
+    img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = URL.createObjectURL(file);
+    });
+  }
+  let w = img.width, h = img.height;
+  const escala = Math.min(1, maxDim / Math.max(w, h));
+  w = Math.round(w * escala); h = Math.round(h * escala);
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+  if (img.close) img.close();
+  let q = 0.72;
+  let url = canvas.toDataURL("image/jpeg", q);
+  // ~1.37 caracteres base64 por byte
+  while (url.length > maxBytes * 1.37 && q > 0.4) {
+    q = Math.round((q - 0.1) * 100) / 100;
+    url = canvas.toDataURL("image/jpeg", q);
+  }
+  return url;
+}
+
+// Control de foto dentro de un modal: muestra miniatura y botones; avisa cambios por onChange.
+function montarFoto(container, inicial, onChange) {
+  let dataUrl = inicial || "";
+  container.innerHTML = "";
+  const ctrl = document.createElement("div");
+  ctrl.className = "foto-control";
+  const thumb = document.createElement("div");
+  thumb.className = "foto-thumb";
+  const add = document.createElement("button");
+  add.type = "button"; add.className = "btn-soft";
+  const del = document.createElement("button");
+  del.type = "button"; del.className = "btn-ghost btn-danger"; del.textContent = "Quitar";
+  const input = document.createElement("input");
+  input.type = "file"; input.accept = "image/*"; input.hidden = true;
+  function pintar() {
+    thumb.innerHTML = dataUrl ? `<img alt="foto" src="${dataUrl}">` : "";
+    thumb.classList.toggle("hidden", !dataUrl);
+    add.textContent = dataUrl ? "Cambiar foto" : "Agregar foto";
+    del.classList.toggle("hidden", !dataUrl);
+  }
+  add.onclick = () => input.click();
+  thumb.onclick = () => { if (dataUrl) verFoto(dataUrl); };
+  del.onclick = () => { dataUrl = ""; onChange(""); pintar(); };
+  input.onchange = async () => {
+    const f = input.files[0];
+    input.value = "";
+    if (!f) return;
+    add.textContent = "Procesando…"; add.disabled = true;
+    try {
+      dataUrl = await comprimirImagen(f);
+      onChange(dataUrl);
+    } catch (e) {
+      alert("No se pudo procesar la imagen.");
+    }
+    add.disabled = false;
+    pintar();
+  };
+  ctrl.append(thumb, add, del, input);
+  container.appendChild(ctrl);
+  pintar();
+}
+
+// ============================================================
 //  EDITOR GENÉRICO (modal para editar cualquier ítem)
 //  campos: [{ id, label, type: text|number|date|month|checkbox|select, value, options }]
 //  onSave(valores) puede devolver un texto de error para mostrarlo.
 // ============================================================
-let editorSave = null, editorDel = null;
+let editorSave = null, editorDel = null, editorFotos = {};
 function abrirEditor({ titulo, campos, onSave, onDelete }) {
   $("edit-title").textContent = titulo;
   $("edit-error").textContent = "";
+  editorFotos = {};
   const box = $("edit-fields");
   box.innerHTML = "";
   campos.forEach((c) => {
+    if (c.type === "foto") {
+      editorFotos[c.id] = c.value || "";
+      const field = document.createElement("div");
+      field.className = "field";
+      const span = document.createElement("span");
+      span.textContent = c.label;
+      const cont = document.createElement("div");
+      field.append(span, cont);
+      box.appendChild(field);
+      montarFoto(cont, c.value || "", (url) => { editorFotos[c.id] = url; });
+      return;
+    }
     const lab = document.createElement("label");
     const span = document.createElement("span");
     span.textContent = c.label;
@@ -193,6 +314,7 @@ $("edit-save").addEventListener("click", async () => {
   $("edit-fields").querySelectorAll("[data-campo]").forEach((i) => {
     v[i.dataset.campo] = i.type === "checkbox" ? i.checked : i.value.trim();
   });
+  Object.assign(v, editorFotos);
   const error = await editorSave(v);
   if (error) $("edit-error").textContent = error;
   else cerrarEditor();
@@ -320,7 +442,8 @@ function editarCuenta(c) {
       { id: "nombre", label: "Nombre", value: c.nombre },
       { id: "monto", label: "Monto $", type: "number", value: c.monto ?? "" },
       { id: "venc", label: "Vencimiento", type: "date", value: c.venc === SIN_FECHA ? "" : c.venc },
-      { id: "recurrente", label: "Se repite cada mes", type: "checkbox", value: c.recurrente }
+      { id: "recurrente", label: "Se repite cada mes", type: "checkbox", value: c.recurrente },
+      { id: "foto", label: "Foto (boleta/comprobante)", type: "foto", value: c.foto || "" }
     ],
     onSave: async (v) => {
       if (!v.nombre) return "Escribe un nombre.";
@@ -330,7 +453,8 @@ function editarCuenta(c) {
         monto: v.monto === "" ? null : Number(v.monto),
         venc: v.venc || SIN_FECHA,
         recurrente: v.recurrente,
-        diaVenc: v.recurrente ? Number(v.venc.split("-")[2]) : null
+        diaVenc: v.recurrente ? Number(v.venc.split("-")[2]) : null,
+        foto: v.foto || null
       });
     },
     onDelete: async () => {
@@ -356,9 +480,11 @@ function cuentaLi(c, hoy) {
       </div>
     </div>
     <span class="cuenta-monto">${fmtMonto(c.monto)}</span>
+    ${c.foto ? `<button class="foto-cuenta" data-act="foto" aria-label="Ver foto"><img src="${c.foto}" alt="foto"></button>` : ""}
     <button class="cuenta-del" data-act="del" aria-label="Eliminar">${SVG_TRASH}</button>
   `;
   li.querySelector(".cuenta-nombre").textContent = c.nombre;
+  if (c.foto) li.querySelector('[data-act="foto"]').onclick = (ev) => { ev.stopPropagation(); verFoto(c.foto); };
   li.querySelector('[data-act="toggle"]').onclick = () => togglePagada(c);
   li.querySelector(".cuenta-body").onclick = () => editarCuenta(c);
   li.querySelector('[data-act="del"]').onclick = () => {
@@ -590,6 +716,7 @@ function renderCompras() {
 const COLORES = ["#E9EFE7", "#F2ECE3", "#F6EAE4", "#E8EAE3", "#E4ECEC", "#EFEAF0"];
 let notaEditId = null;
 let notaColor = COLORES[0];
+let notaFoto = "";
 
 // pintar selector de colores
 const colBox = $("nota-colores");
@@ -614,6 +741,8 @@ function abrirModal(nota = null) {
   $("nota-contenido").value = nota?.data?.contenido || "";
   colBox.querySelectorAll(".color-dot").forEach((x, i) =>
     x.classList.toggle("sel", COLORES[i] === notaColor));
+  notaFoto = nota?.data?.foto || "";
+  montarFoto($("nota-foto"), notaFoto, (url) => { notaFoto = url; });
   $("nota-modal").classList.remove("hidden");
 }
 function cerrarModal() { $("nota-modal").classList.add("hidden"); }
@@ -625,12 +754,12 @@ $("nota-modal").addEventListener("click", (e) => { if (e.target.id === "nota-mod
 $("nota-guardar").addEventListener("click", async () => {
   const titulo = $("nota-titulo").value.trim();
   const contenido = $("nota-contenido").value.trim();
-  if (!titulo && !contenido) { cerrarModal(); return; }
+  if (!titulo && !contenido && !notaFoto) { cerrarModal(); return; }
   if (notaEditId) {
-    await updateDoc(doc(db, "notas", notaEditId), { titulo, contenido, color: notaColor });
+    await updateDoc(doc(db, "notas", notaEditId), { titulo, contenido, color: notaColor, foto: notaFoto || null });
   } else {
     await addDoc(collection(db, "notas"), {
-      titulo, contenido, color: notaColor,
+      titulo, contenido, color: notaColor, foto: notaFoto || null,
       createdBy: nombreCorto(),
       createdAt: serverTimestamp()
     });
@@ -650,10 +779,12 @@ function renderNotas(snap) {
     el.style.background = n.color || COLORES[0];
     el.innerHTML = `
       <button class="nota-del" data-act="del" aria-label="Eliminar">${SVG_TRASH}</button>
+      ${n.foto ? `<div class="nota-foto" data-act="foto"><img src="${n.foto}" alt="foto"></div>` : ""}
       <div class="nota-titulo"></div>
       <div class="nota-contenido"></div>
       <div class="nota-meta"></div>
     `;
+    if (n.foto) el.querySelector('[data-act="foto"]').onclick = (ev) => { ev.stopPropagation(); verFoto(n.foto); };
     el.querySelector(".nota-titulo").textContent = n.titulo || "";
     el.querySelector(".nota-contenido").textContent = n.contenido || "";
     el.querySelector(".nota-meta").textContent = "— " + (n.createdBy || "");
