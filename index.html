@@ -83,6 +83,15 @@
           <span class="tile__title">Historial CMR</span>
           <span class="tile__hint" id="tile-cmr">—</span>
         </button>
+        <button class="tile tile--splid tile--wide" type="button" data-goto="splid">
+          <span class="tile__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg></span>
+          <span class="tile__txt"><span class="tile__title">Splid</span><span class="tile__hint" id="tile-splid">—</span></span>
+        </button>
+      </div>
+
+      <div class="inicio-sec">
+        <div class="inicio-head"><h3>Vence pronto</h3><button class="link-btn" type="button" data-goto="cuentas">Ver todo</button></div>
+        <div id="inicio-vence" class="inicio-card"></div>
       </div>
 
       <div class="inicio-sec">
@@ -107,14 +116,28 @@
         <input type="text" id="cuenta-nombre" placeholder="Nombre (ej: Luz, Agua, Internet)" required />
         <input type="number" id="cuenta-monto" placeholder="Monto $" min="0" step="1" />
         <input type="date" id="cuenta-venc" />
+        <label class="check-inline"><input type="checkbox" id="cuenta-rec" /> <span>Mensual</span></label>
         <button type="submit" class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Agregar</button>
       </form>
 
       <ul id="cuentas-list" class="card-list"></ul>
       <p class="empty" id="cuentas-empty">No hay cuentas registradas todavía.</p>
 
+      <!-- ===== Pagos anteriores ===== -->
+      <section id="hist-section" class="cmr-section hidden">
+        <button id="hist-toggle" class="cmr-head" type="button" aria-expanded="false">
+          <span class="cmr-title">Pagos anteriores</span>
+          <span id="hist-resumen" class="cmr-resumen"></span>
+          <span class="cmr-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+        </button>
+        <div id="hist-body" class="cmr-body hidden">
+          <div class="cmr-chart-wrap"><canvas id="hist-chart" height="200"></canvas></div>
+          <ul id="hist-list" class="hist-list"></ul>
+        </div>
+      </section>
+
       <!-- ===== Historial CMR ===== -->
-      <section id="cmr-section" class="cmr-section hidden">
+      <section id="cmr-section" class="cmr-section">
         <button id="cmr-toggle" class="cmr-head" type="button" aria-expanded="false">
           <span class="cmr-badge">CMR</span>
           <span class="cmr-title">Historial CMR Mastercard</span>
@@ -125,6 +148,12 @@
           <div class="cmr-chart-wrap">
             <canvas id="cmr-chart" height="200"></canvas>
           </div>
+          <div class="cmr-actions">
+            <button id="cmr-import" class="btn-soft" type="button">Importar PDF</button>
+            <button id="cmr-add" class="btn-soft" type="button">Agregar mes</button>
+            <input type="file" id="cmr-file" accept="application/pdf,.pdf" hidden />
+          </div>
+          <p id="cmr-status" class="cmr-status"></p>
           <ul id="cmr-list" class="cmr-list"></ul>
         </div>
       </section>
@@ -138,8 +167,10 @@
       </div>
 
       <form id="compra-form" class="row-form">
-        <input type="text" id="compra-item" placeholder="¿Qué falta comprar?" required />
+        <input type="text" id="compra-item" placeholder="¿Qué falta comprar?" list="productos-dl" autocomplete="off" required />
+        <datalist id="productos-dl"></datalist>
         <input type="text" id="compra-cant" placeholder="Cant." class="cant" />
+        <select id="compra-cat" class="cat-select" aria-label="Categoría"></select>
         <button type="submit" class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Agregar</button>
       </form>
 
@@ -226,14 +257,37 @@
     </div>
   </div>
 
+  <!-- ===== Modal genérico de edición ===== -->
+  <div id="edit-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="edit-title">Editar</h3>
+      <div id="edit-fields" class="edit-fields"></div>
+      <p id="edit-error" class="login-error"></p>
+      <div class="modal-actions">
+        <button id="edit-del" class="btn-ghost btn-danger" type="button">Eliminar</button>
+        <span class="spacer"></span>
+        <button id="edit-cancel" class="btn-ghost" type="button">Cancelar</button>
+        <button id="edit-save" class="btn-primary" type="button">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== Modal de gasto Splid ===== -->
   <div id="splid-modal" class="modal hidden">
     <div class="modal-card">
-      <h3>Nuevo gasto</h3>
+      <h3 id="splid-modal-title">Nuevo gasto</h3>
       <input type="text" id="splid-titulo" placeholder="¿En qué se gastó?" />
       <input type="number" id="splid-monto" placeholder="Monto $" min="0" step="1" inputmode="numeric" />
       <label class="field"><span>Pagado por</span><select id="splid-pagador"></select></label>
       <div class="field"><span>Dividir entre</span><div id="splid-para" class="chips"></div></div>
+      <div class="field"><span>Cómo se divide</span>
+        <div id="splid-modo" class="chips">
+          <button type="button" class="chip toggle" data-modo="iguales">Partes iguales</button>
+          <button type="button" class="chip toggle" data-modo="montos">Por montos</button>
+          <button type="button" class="chip toggle" data-modo="porcentajes">Por %</button>
+        </div>
+      </div>
+      <div id="splid-partes" class="splid-partes"></div>
       <p id="splid-error" class="login-error"></p>
       <div class="modal-actions">
         <button id="splid-cancelar" class="btn-ghost" type="button">Cancelar</button>

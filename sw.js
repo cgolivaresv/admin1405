@@ -1,12 +1,14 @@
 // Service worker de Admin 1405
 // Estrategia: cache del "cascarón" de la app (shell) para que abra
 // offline; los datos (Firestore) se manejan en línea por el SDK.
-const CACHE = "admin1405-v8";
+const CACHE = "admin1405-v9";
 const SHELL = [
   "./",
   "./index.html",
   "./css/styles.css",
   "./js/app.js",
+  "./js/cmr-pdf.js",
+  "./js/logic.js",
   "./js/firebase-config.js",
   "./manifest.json",
   "./icons/icon-192.png",
