@@ -21,7 +21,7 @@ const db = getFirestore(app);
 setPersistence(auth, browserLocalPersistence);
 
 // Versión de la app (mostrada al pie)
-const APP_VERSION = "v1.5.0";
+const APP_VERSION = "v1.6.0";
 document.querySelectorAll("#app-footer, #login-version")
   .forEach((el) => { el.textContent = "Admin 1405 · " + APP_VERSION; });
 
@@ -42,6 +42,7 @@ onAuthStateChanged(auth, (u) => {
     loginEl.classList.add("hidden");
     appEl.classList.remove("hidden");
     $("who").textContent = u.displayName || u.email.split("@")[0];
+    $("inicio-saludo").textContent = "Hola, " + (u.displayName || u.email.split("@")[0]);
     startListeners();
   } else {
     user = null;
@@ -87,15 +88,18 @@ function traducirError(code) {
 // ============================================================
 //  NAVEGACIÓN ENTRE SECCIONES
 // ============================================================
+const TABS = ["inicio", "cuentas", "compras", "notas"];
+function switchTab(tab) {
+  document.querySelectorAll(".tabbar-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+  TABS.forEach((t) => $("tab-" + t).classList.toggle("hidden", t !== tab));
+  window.scrollTo(0, 0);
+}
 document.querySelectorAll(".tabbar-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const tab = btn.dataset.tab;
-    document.querySelectorAll(".tabbar-btn").forEach((b) => b.classList.toggle("active", b === btn));
-    ["cuentas", "compras", "notas"].forEach((t) => {
-      $("tab-" + t).classList.toggle("hidden", t !== tab);
-    });
-    window.scrollTo(0, 0);
-  });
+  btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+});
+// accesos rápidos desde Inicio (tarjetas y enlaces "Ver todo")
+document.querySelectorAll("[data-goto]").forEach((el) => {
+  el.addEventListener("click", () => switchTab(el.dataset.goto));
 });
 
 // ============================================================
@@ -147,6 +151,7 @@ function renderCuentas(snap) {
   const list = $("cuentas-list");
   list.innerHTML = "";
   let totalPend = 0, cntPend = 0;
+  const pend = [];
   const hoy = new Date().toISOString().slice(0, 10);
 
   snap.forEach((d) => {
@@ -157,6 +162,7 @@ function renderCuentas(snap) {
     const li = document.createElement("li");
     li.className = "cuenta" + (c.pagada ? " pagada" : "");
     const vencida = !c.pagada && c.venc && c.venc !== "9999-12-31" && c.venc < hoy;
+    if (!c.pagada) pend.push({ nombre: c.nombre, monto: c.monto, venc: c.venc, vencida });
     li.innerHTML = `
       <button class="cuenta-check" data-act="toggle">${c.pagada ? SVG_CHECK : ""}</button>
       <div class="cuenta-body">
@@ -181,7 +187,27 @@ function renderCuentas(snap) {
   $("cuentas-empty").classList.toggle("hidden", snap.size > 0);
   $("cuentas-resumen").textContent = cntPend
     ? `${cntPend} pendiente${cntPend > 1 ? "s" : ""} · ${fmtMonto(totalPend)}`
-    : "Todo al día ✓";
+    : "Todo al día";
+
+  // --- Inicio: resumen de cuentas pendientes ---
+  $("tile-cuentas").textContent = cntPend
+    ? `${cntPend} pendiente${cntPend > 1 ? "s" : ""}` : "Al día";
+  const ic = $("inicio-cuentas");
+  if (!pend.length) {
+    ic.innerHTML = `<p class="inicio-vacio">Todas las cuentas al día ✓</p>`;
+  } else {
+    ic.innerHTML =
+      pend.slice(0, 3).map((p) =>
+        `<div class="inicio-item"><span class="inicio-item__t">${esc(p.nombre)}${p.vencida ? ' <b class="venc">vencida</b>' : ""}</span><span class="inicio-item__v">${fmtMonto(p.monto)}</span></div>`
+      ).join("") +
+      `<div class="inicio-total"><span>Total pendiente</span><span>${fmtMonto(totalPend)}</span></div>`;
+  }
+}
+
+// escape básico para texto de usuario en innerHTML
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, (m) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
 }
 
 // ============================================================
@@ -232,6 +258,11 @@ function renderCompras(snap) {
     list.appendChild(li);
   });
   $("compras-empty").classList.toggle("hidden", snap.size > 0);
+
+  // --- Inicio: resumen de supermercado ---
+  const porComprar = window.__compras.filter((x) => !x.data.comprado).length;
+  $("tile-compras").textContent = porComprar
+    ? `${porComprar} por comprar` : "Lista al día";
 }
 
 // ============================================================
@@ -291,8 +322,10 @@ $("nota-guardar").addEventListener("click", async () => {
 function renderNotas(snap) {
   const board = $("notas-board");
   board.innerHTML = "";
+  const notas = [];
   snap.forEach((d) => {
     const n = d.data();
+    notas.push(n);
     const el = document.createElement("div");
     el.className = "nota";
     el.style.background = n.color || COLORES[0];
@@ -313,6 +346,22 @@ function renderNotas(snap) {
     board.appendChild(el);
   });
   $("notas-empty").classList.toggle("hidden", snap.size > 0);
+
+  // --- Inicio: últimas notas ---
+  $("tile-notas").textContent = notas.length
+    ? `${notas.length} nota${notas.length > 1 ? "s" : ""}` : "Sin notas";
+  const inc = $("inicio-notas");
+  if (!notas.length) {
+    inc.innerHTML = `<p class="inicio-vacio">Aún no hay notas.</p>`;
+  } else {
+    inc.innerHTML = notas.slice(0, 2).map((n) => {
+      const txt = n.titulo || n.contenido || "";
+      return `<div class="inicio-nota" style="border-left-color:${n.color || "#E9EFE7"}">
+        <span class="inicio-nota__t">${esc(txt)}</span>
+        <span class="inicio-nota__m">— ${esc(n.createdBy || "")}</span>
+      </div>`;
+    }).join("");
+  }
 }
 
 // ============================================================
@@ -324,7 +373,7 @@ function renderCmr(snap) {
   const sec = $("cmr-section");
   const data = [];
   snap.forEach((d) => data.push(d.data()));
-  if (!data.length) { sec.classList.add("hidden"); return; }
+  if (!data.length) { sec.classList.add("hidden"); $("tile-cmr").textContent = "Sin datos"; return; }
   sec.classList.remove("hidden");
 
   const totales = data.map((r) => Number(r.total) || 0);
@@ -333,6 +382,7 @@ function renderCmr(snap) {
   cmrState = { data, prom, max, min };
 
   $("cmr-resumen").textContent = `${data.length} meses · prom ${fmtMonto(prom)}`;
+  $("tile-cmr").textContent = `prom ${fmtMonto(prom)}`;
 
   // --- lista mensual ---
   const list = $("cmr-list");

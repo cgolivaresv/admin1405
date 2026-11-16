@@ -54,8 +54,50 @@
       </div>
     </header>
 
+    <!-- ===== Sección: Inicio ===== -->
+    <section id="tab-inicio" class="tab">
+      <div class="greeting">
+        <span class="eyebrow">Nuestro hogar</span>
+        <h2 id="inicio-saludo">Hola</h2>
+        <p>Un hogar organizado, una vida compartida.</p>
+      </div>
+
+      <div class="tiles">
+        <button class="tile tile--cuentas" type="button" data-goto="cuentas">
+          <span class="tile__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 8h15a2 2 0 0 1 2 2v2h-5a2 2 0 0 0 0 4h5"/></svg></span>
+          <span class="tile__title">Cuentas</span>
+          <span class="tile__hint" id="tile-cuentas">—</span>
+        </button>
+        <button class="tile tile--compras" type="button" data-goto="compras">
+          <span class="tile__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 2 10h14l2-10H3Z"/><path d="m8 10 4-7m4 7-4-7M7 14v3m5-3v3m5-3v3"/></svg></span>
+          <span class="tile__title">Supermercado</span>
+          <span class="tile__hint" id="tile-compras">—</span>
+        </button>
+        <button class="tile tile--notas" type="button" data-goto="notas">
+          <span class="tile__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1Z"/><path d="M8 4v4H4m5 4h8m-8 4h6"/></svg></span>
+          <span class="tile__title">Notas</span>
+          <span class="tile__hint" id="tile-notas">—</span>
+        </button>
+        <button class="tile tile--cmr" type="button" data-goto="cuentas">
+          <span class="tile__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16v18l-3-2-3 2-2-2-3 2-2-2-3 2V3Z"/><path d="M8 8h8M8 12h8M8 16h4"/></svg></span>
+          <span class="tile__title">Historial CMR</span>
+          <span class="tile__hint" id="tile-cmr">—</span>
+        </button>
+      </div>
+
+      <div class="inicio-sec">
+        <div class="inicio-head"><h3>Cuentas pendientes</h3><button class="link-btn" type="button" data-goto="cuentas">Ver todo</button></div>
+        <div id="inicio-cuentas" class="inicio-card"></div>
+      </div>
+
+      <div class="inicio-sec">
+        <div class="inicio-head"><h3>Últimas notas</h3><button class="link-btn" type="button" data-goto="notas">Ver todo</button></div>
+        <div id="inicio-notas" class="inicio-card"></div>
+      </div>
+    </section>
+
     <!-- ===== Sección: Cuentas ===== -->
-    <section id="tab-cuentas" class="tab">
+    <section id="tab-cuentas" class="tab hidden">
       <div class="section-head">
         <h2><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 8h15a2 2 0 0 1 2 2v2h-5a2 2 0 0 0 0 4h5"/><path d="M16 14h.01"/></svg></span> Cuentas</h2>
         <div id="cuentas-resumen" class="resumen"></div>
@@ -119,7 +161,10 @@
 
     <!-- ===== Navegación inferior ===== -->
     <nav class="tabbar">
-      <button class="tabbar-btn active" data-tab="cuentas">
+      <button class="tabbar-btn active" data-tab="inicio">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span><span>Inicio</span>
+      </button>
+      <button class="tabbar-btn" data-tab="cuentas">
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 8h15a2 2 0 0 1 2 2v2h-5a2 2 0 0 0 0 4h5"/><path d="M16 14h.01"/></svg></span><span>Cuentas</span>
       </button>
       <button class="tabbar-btn" data-tab="compras">
