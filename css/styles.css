@@ -51,6 +51,8 @@ input,textarea{font-family:inherit;font-size:16px}
 .field input:focus{outline:none;border-color:var(--accent)}
 .login-error{color:var(--red);font-size:14px;text-align:center;min-height:18px}
 .login-hint{color:var(--muted);font-size:12px;text-align:center}
+.login-version{color:var(--muted);font-size:11px;text-align:center;opacity:.7}
+.app-footer{text-align:center;color:var(--paper);opacity:.7;font-size:11px;padding:10px 0 4px}
 
 .btn-primary{
   background:var(--accent);color:#fff;padding:13px;border-radius:12px;

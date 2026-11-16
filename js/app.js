@@ -20,6 +20,11 @@ const db = getFirestore(app);
 // La sesión queda guardada en el dispositivo (no se pide clave en cada apertura)
 setPersistence(auth, browserLocalPersistence);
 
+// Versión de la app (mostrada al pie)
+const APP_VERSION = "v1.4.0";
+document.querySelectorAll("#app-footer, #login-version")
+  .forEach((el) => { el.textContent = "Admin 1405 · " + APP_VERSION; });
+
 // ---- Helpers DOM ----
 const $ = (id) => document.getElementById(id);
 const splash = $("splash"), loginEl = $("login"), appEl = $("app");
