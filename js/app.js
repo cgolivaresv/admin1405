@@ -101,6 +101,7 @@ function startListeners() {
   unsubs.push(onSnapshot(query(collection(db, "cuentas"), orderBy("venc", "asc")), renderCuentas));
   unsubs.push(onSnapshot(query(collection(db, "compras"), orderBy("createdAt", "asc")), renderCompras));
   unsubs.push(onSnapshot(query(collection(db, "notas"), orderBy("createdAt", "desc")), renderNotas));
+  unsubs.push(onSnapshot(query(collection(db, "cmr_gastos"), orderBy("periodo", "asc")), renderCmr));
 }
 function stopListeners() {
   while (unsubs.length) unsubs.pop()();
@@ -302,6 +303,86 @@ function renderNotas(snap) {
     board.appendChild(el);
   });
   $("notas-empty").classList.toggle("hidden", snap.size > 0);
+}
+
+// ============================================================
+//  HISTORIAL CMR (lee de Firestore; datos privados, no en el repo)
+// ============================================================
+function renderCmr(snap) {
+  const sec = $("cmr-section");
+  const data = [];
+  snap.forEach((d) => data.push(d.data()));
+  if (!data.length) { sec.classList.add("hidden"); return; }
+  sec.classList.remove("hidden");
+
+  const totales = data.map((r) => Number(r.total) || 0);
+  const prom = Math.round(totales.reduce((a, b) => a + b, 0) / totales.length);
+  const max = Math.max(...totales), min = Math.min(...totales);
+  $("cmr-resumen").textContent =
+    `${data.length} meses · prom ${fmtMonto(prom)} · máx ${fmtMonto(max)}`;
+
+  // --- lista mensual ---
+  const list = $("cmr-list");
+  list.innerHTML = "";
+  [...data].reverse().forEach((r) => {
+    const li = document.createElement("li");
+    li.className = "cmr-row" + (r.total === max ? " alto" : r.total === min ? " bajo" : "");
+    li.innerHTML = `<span class="mes"></span><span class="val"></span>`;
+    li.querySelector(".mes").textContent = r.mes || r.periodo;
+    li.querySelector(".val").textContent = fmtMonto(r.total);
+    list.appendChild(li);
+  });
+
+  // --- gráfico de barras (canvas) ---
+  drawCmrChart(data, max, prom);
+}
+
+function drawCmrChart(data, max, prom) {
+  const canvas = $("cmr-chart");
+  const dpr = window.devicePixelRatio || 1;
+  const barW = 14, gap = 6, padL = 4, padR = 4, padTop = 14, padBot = 26;
+  const h = 200;
+  const w = Math.max(canvas.parentElement.clientWidth, padL + padR + data.length * (barW + gap));
+  canvas.style.width = w + "px";
+  canvas.style.height = h + "px";
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  const chartH = h - padTop - padBot;
+  const yFor = (v) => padTop + chartH * (1 - v / max);
+
+  // línea de promedio
+  ctx.strokeStyle = "#c0492f";
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(padL, yFor(prom));
+  ctx.lineTo(w - padR, yFor(prom));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font = "9px -apple-system, Arial, sans-serif";
+  ctx.textAlign = "center";
+  data.forEach((r, i) => {
+    const x = padL + i * (barW + gap);
+    const bh = chartH * (r.total / max);
+    const y = padTop + chartH - bh;
+    // barra
+    ctx.fillStyle = r.total === max ? "#c0492f" : "#8b5a2b";
+    ctx.fillRect(x, y, barW, bh);
+    // etiqueta de mes cada 3
+    if (i % 3 === 0 || i === data.length - 1) {
+      ctx.save();
+      ctx.fillStyle = "#7a6f63";
+      ctx.translate(x + barW / 2, h - padBot + 4);
+      ctx.rotate(-Math.PI / 4);
+      ctx.textAlign = "right";
+      ctx.fillText((r.mes || r.periodo).replace("-20", "-"), 0, 0);
+      ctx.restore();
+    }
+  });
 }
 
 // ============================================================

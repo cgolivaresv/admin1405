@@ -138,6 +138,21 @@ input,textarea{font-family:inherit;font-size:16px}
 
 .empty{color:var(--paper);text-align:center;opacity:.85;padding:30px 10px;font-size:14px}
 
+/* ===== Historial CMR ===== */
+.cmr-section{margin-top:22px;background:var(--paper);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.cmr-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.cmr-head h3{font-size:16px;color:var(--cork-dark)}
+.cmr-resumen{font-size:12px;color:var(--muted)}
+.cmr-chart-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+#cmr-chart{display:block}
+.cmr-list{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:2px;max-height:280px;overflow-y:auto}
+.cmr-row{display:flex;justify-content:space-between;align-items:center;padding:8px 6px;border-bottom:1px solid var(--line);font-size:14px}
+.cmr-row:last-child{border-bottom:none}
+.cmr-row .mes{color:var(--ink);text-transform:capitalize}
+.cmr-row .val{font-weight:700;color:var(--accent)}
+.cmr-row.alto .val{color:var(--red)}
+.cmr-row.bajo .val{color:var(--green)}
+
 /* ===== Tabbar ===== */
 .tabbar{
   position:fixed;bottom:0;left:0;right:0;z-index:20;
