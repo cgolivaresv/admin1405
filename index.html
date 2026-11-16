@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#8b5a2b" />
+  <title>Admin 1405</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- ===== Pantalla de carga ===== -->
+  <div id="splash" class="splash">
+    <div class="splash-card">
+      <div class="splash-logo">📌</div>
+      <div class="splash-title">Admin 1405</div>
+      <div class="splash-sub">Cargando…</div>
+    </div>
+  </div>
+
+  <!-- ===== Login ===== -->
+  <section id="login" class="login hidden">
+    <form id="login-form" class="login-card" autocomplete="on">
+      <div class="login-logo">📌</div>
+      <h1 class="login-title">Admin 1405</h1>
+      <p class="login-sub">Nuestro diario mural</p>
+      <label class="field">
+        <span>Correo</span>
+        <input type="email" id="login-email" inputmode="email" autocomplete="username" required />
+      </label>
+      <label class="field">
+        <span>Contraseña</span>
+        <input type="password" id="login-pass" autocomplete="current-password" required />
+      </label>
+      <button type="submit" id="login-btn" class="btn-primary">Entrar</button>
+      <p id="login-error" class="login-error" role="alert"></p>
+      <p class="login-hint">La sesión queda guardada en este dispositivo.</p>
+    </form>
+  </section>
+
+  <!-- ===== App ===== -->
+  <main id="app" class="app hidden">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-logo">📌</span>
+        <span class="topbar-title">Admin 1405</span>
+      </div>
+      <div class="topbar-right">
+        <span id="who" class="who"></span>
+        <button id="logout-btn" class="btn-ghost" title="Cerrar sesión">Salir</button>
+      </div>
+    </header>
+
+    <!-- ===== Sección: Cuentas ===== -->
+    <section id="tab-cuentas" class="tab">
+      <div class="section-head">
+        <h2>💳 Cuentas</h2>
+        <div id="cuentas-resumen" class="resumen"></div>
+      </div>
+
+      <form id="cuenta-form" class="row-form">
+        <input type="text" id="cuenta-nombre" placeholder="Nombre (ej: Luz, Agua, Internet)" required />
+        <input type="number" id="cuenta-monto" placeholder="Monto $" min="0" step="1" />
+        <input type="date" id="cuenta-venc" />
+        <button type="submit" class="btn-add">Agregar</button>
+      </form>
+
+      <ul id="cuentas-list" class="card-list"></ul>
+      <p class="empty" id="cuentas-empty">No hay cuentas registradas todavía.</p>
+    </section>
+
+    <!-- ===== Sección: Supermercado ===== -->
+    <section id="tab-compras" class="tab hidden">
+      <div class="section-head">
+        <h2>🛒 Supermercado</h2>
+        <button id="limpiar-comprados" class="btn-ghost small">Quitar comprados</button>
+      </div>
+
+      <form id="compra-form" class="row-form">
+        <input type="text" id="compra-item" placeholder="¿Qué falta comprar?" required />
+        <input type="text" id="compra-cant" placeholder="Cant." class="cant" />
+        <button type="submit" class="btn-add">Agregar</button>
+      </form>
+
+      <ul id="compras-list" class="check-list"></ul>
+      <p class="empty" id="compras-empty">La lista está vacía. ¡Buena señal!</p>
+    </section>
+
+    <!-- ===== Sección: Notas / Diario mural ===== -->
+    <section id="tab-notas" class="tab hidden">
+      <div class="section-head">
+        <h2>📝 Información</h2>
+        <button id="nueva-nota" class="btn-add">+ Nota</button>
+      </div>
+      <div id="notas-board" class="notas-board"></div>
+      <p class="empty" id="notas-empty">Aún no hay notas en el mural.</p>
+    </section>
+
+    <!-- ===== Navegación inferior ===== -->
+    <nav class="tabbar">
+      <button class="tabbar-btn active" data-tab="cuentas">
+        <span class="ic">💳</span><span>Cuentas</span>
+      </button>
+      <button class="tabbar-btn" data-tab="compras">
+        <span class="ic">🛒</span><span>Súper</span>
+      </button>
+      <button class="tabbar-btn" data-tab="notas">
+        <span class="ic">📝</span><span>Notas</span>
+      </button>
+    </nav>
+  </main>
+
+  <!-- ===== Modal de nota ===== -->
+  <div id="nota-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="nota-modal-title">Nueva nota</h3>
+      <input type="text" id="nota-titulo" placeholder="Título" />
+      <textarea id="nota-contenido" placeholder="Escribe aquí…" rows="5"></textarea>
+      <div class="color-picker" id="nota-colores"></div>
+      <div class="modal-actions">
+        <button id="nota-cancelar" class="btn-ghost">Cancelar</button>
+        <button id="nota-guardar" class="btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase + App (ES modules) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

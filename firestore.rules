@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// ============================================================
+//  Reglas de seguridad de Firestore para Admin 1405
+//
+//  Solo las cuentas autorizadas (tú y tu esposa) pueden leer y
+//  escribir. Pega estas reglas en:
+//  consola de Firebase > Firestore Database > pestaña "Reglas".
+//
+//  Reemplaza los correos de la lista por los de ustedes dos.
+// ============================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Lista blanca de correos autorizados
+    function autorizado() {
+      return request.auth != null &&
+        request.auth.token.email in [
+          "tucorreo@ejemplo.com",
+          "esposa@ejemplo.com"
+        ];
+    }
+
+    // Todas las colecciones de la app comparten la misma regla
+    match /{coleccion}/{docId} {
+      allow read, write: if autorizado();
+    }
+  }
+}

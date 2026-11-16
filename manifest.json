@@ -1,0 +1,16 @@
+{
+  "name": "Admin 1405",
+  "short_name": "Admin 1405",
+  "description": "Nuestro diario mural: cuentas, supermercado e información.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#c49a6c",
+  "theme_color": "#8b5a2b",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
