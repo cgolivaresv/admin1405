@@ -157,6 +157,39 @@
       <p class="empty" id="notas-empty">Aún no hay notas en el mural.</p>
     </section>
 
+    <!-- ===== Sección: Splid (dividir gastos) ===== -->
+    <section id="tab-splid" class="tab hidden">
+      <div class="section-head">
+        <h2><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg></span> Splid</h2>
+        <button id="splid-nuevo" class="btn-add" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Gasto</button>
+      </div>
+
+      <div class="splid-block">
+        <h3 class="splid-h">Personas</h3>
+        <div id="splid-personas" class="chips"></div>
+        <form id="splid-persona-form" class="row-form splid-persona-form">
+          <input type="text" id="splid-persona" placeholder="Agregar persona" required />
+          <button type="submit" class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        </form>
+      </div>
+
+      <div class="splid-block">
+        <div class="inicio-head"><h3>Saldos</h3><span id="splid-total" class="resumen"></span></div>
+        <div id="splid-saldos" class="inicio-card"></div>
+      </div>
+
+      <div class="splid-block">
+        <div class="inicio-head"><h3>Para saldar</h3></div>
+        <div id="splid-saldar" class="inicio-card"></div>
+      </div>
+
+      <div class="splid-block">
+        <div class="inicio-head"><h3>Movimientos</h3></div>
+        <ul id="splid-gastos" class="card-list"></ul>
+        <p class="empty" id="splid-empty">Aún no hay gastos registrados.</p>
+      </div>
+    </section>
+
     <footer id="app-footer" class="app-footer"></footer>
 
     <!-- ===== Navegación inferior ===== -->
@@ -173,6 +206,9 @@
       <button class="tabbar-btn" data-tab="notas">
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1Z"/><path d="M8 4v4H4m5 4h8m-8 4h6"/></svg></span><span>Notas</span>
       </button>
+      <button class="tabbar-btn" data-tab="splid">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg></span><span>Splid</span>
+      </button>
     </nav>
   </main>
 
@@ -186,6 +222,22 @@
       <div class="modal-actions">
         <button id="nota-cancelar" class="btn-ghost">Cancelar</button>
         <button id="nota-guardar" class="btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Modal de gasto Splid ===== -->
+  <div id="splid-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Nuevo gasto</h3>
+      <input type="text" id="splid-titulo" placeholder="¿En qué se gastó?" />
+      <input type="number" id="splid-monto" placeholder="Monto $" min="0" step="1" inputmode="numeric" />
+      <label class="field"><span>Pagado por</span><select id="splid-pagador"></select></label>
+      <div class="field"><span>Dividir entre</span><div id="splid-para" class="chips"></div></div>
+      <p id="splid-error" class="login-error"></p>
+      <div class="modal-actions">
+        <button id="splid-cancelar" class="btn-ghost" type="button">Cancelar</button>
+        <button id="splid-guardar" class="btn-primary" type="button">Guardar</button>
       </div>
     </div>
   </div>

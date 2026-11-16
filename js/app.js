@@ -21,7 +21,7 @@ const db = getFirestore(app);
 setPersistence(auth, browserLocalPersistence);
 
 // Versión de la app (mostrada al pie)
-const APP_VERSION = "v1.6.1";
+const APP_VERSION = "v1.7.0";
 document.querySelectorAll("#app-footer, #login-version")
   .forEach((el) => { el.textContent = "Admin 1405 · " + APP_VERSION; });
 
@@ -88,7 +88,7 @@ function traducirError(code) {
 // ============================================================
 //  NAVEGACIÓN ENTRE SECCIONES
 // ============================================================
-const TABS = ["inicio", "cuentas", "compras", "notas"];
+const TABS = ["inicio", "cuentas", "compras", "notas", "splid"];
 function switchTab(tab) {
   document.querySelectorAll(".tabbar-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
   TABS.forEach((t) => $("tab-" + t).classList.toggle("hidden", t !== tab));
@@ -111,6 +111,8 @@ function startListeners() {
   unsubs.push(onSnapshot(query(collection(db, "compras"), orderBy("createdAt", "asc")), renderCompras));
   unsubs.push(onSnapshot(query(collection(db, "notas"), orderBy("createdAt", "desc")), renderNotas));
   unsubs.push(onSnapshot(query(collection(db, "cmr_gastos"), orderBy("periodo", "asc")), renderCmr));
+  unsubs.push(onSnapshot(query(collection(db, "splid_personas"), orderBy("nombre", "asc")), onSpPersonas));
+  unsubs.push(onSnapshot(query(collection(db, "splid_gastos"), orderBy("createdAt", "desc")), onSpGastos));
 }
 function stopListeners() {
   while (unsubs.length) unsubs.pop()();
@@ -457,6 +459,222 @@ function drawCmrChart(data, max, prom) {
     }
   });
 }
+
+// ============================================================
+//  SPLID — dividir gastos
+//  splid_personas: { nombre }
+//  splid_gastos:   { titulo, monto, pagadoPor, para:[nombres], tipo:"gasto"|"pago" }
+// ============================================================
+let spPersonas = [], spGastos = [];
+function onSpPersonas(snap) {
+  spPersonas = [];
+  snap.forEach((d) => spPersonas.push({ id: d.id, ...d.data() }));
+  renderSplid();
+}
+function onSpGastos(snap) {
+  spGastos = [];
+  snap.forEach((d) => spGastos.push({ id: d.id, ...d.data() }));
+  renderSplid();
+}
+
+// nombres = personas registradas + cualquiera que aparezca en un gasto
+function splidNombres() {
+  const set = new Set(spPersonas.map((p) => p.nombre));
+  spGastos.forEach((g) => {
+    if (g.pagadoPor) set.add(g.pagadoPor);
+    (g.para || []).forEach((n) => set.add(n));
+  });
+  return [...set];
+}
+
+// saldo > 0: le deben · saldo < 0: debe
+function splidBalances() {
+  const bal = {};
+  splidNombres().forEach((n) => { bal[n] = 0; });
+  spGastos.forEach((g) => {
+    const m = Number(g.monto) || 0;
+    const para = g.para || [];
+    if (!m || !para.length || !g.pagadoPor) return;
+    bal[g.pagadoPor] += m;
+    const parte = m / para.length;
+    para.forEach((n) => { bal[n] -= parte; });
+  });
+  return bal;
+}
+
+// mínimo de transferencias: deudores pagan a acreedores
+function splidTransferencias(bal) {
+  const deb = [], cre = [];
+  Object.keys(bal).forEach((n) => {
+    const v = Math.round(bal[n]);
+    if (v < 0) deb.push({ n, v: -v });
+    else if (v > 0) cre.push({ n, v });
+  });
+  deb.sort((a, b) => b.v - a.v);
+  cre.sort((a, b) => b.v - a.v);
+  const out = [];
+  let i = 0, j = 0;
+  while (i < deb.length && j < cre.length) {
+    const x = Math.min(deb[i].v, cre[j].v);
+    if (x > 0) out.push({ de: deb[i].n, a: cre[j].n, monto: x });
+    deb[i].v -= x; cre[j].v -= x;
+    if (!deb[i].v) i++;
+    if (!cre[j].v) j++;
+  }
+  return out;
+}
+
+function renderSplid() {
+  // --- personas ---
+  const pBox = $("splid-personas");
+  pBox.innerHTML = "";
+  spPersonas.forEach((p) => {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.innerHTML = `<span></span><button class="chip-x" type="button" aria-label="Quitar">×</button>`;
+    chip.querySelector("span").textContent = p.nombre;
+    chip.querySelector(".chip-x").onclick = () => {
+      if (confirm(`¿Quitar a "${p.nombre}"? Sus gastos ya registrados se mantienen.`))
+        deleteDoc(doc(db, "splid_personas", p.id));
+    };
+    pBox.appendChild(chip);
+  });
+
+  // --- saldos ---
+  const bal = splidBalances();
+  const nombres = Object.keys(bal);
+  const sBox = $("splid-saldos");
+  if (!nombres.length) {
+    sBox.innerHTML = `<p class="inicio-vacio">Agrega a las personas para empezar.</p>`;
+  } else {
+    sBox.innerHTML = nombres.map((n) => {
+      const v = Math.round(bal[n]);
+      const cls = v > 0 ? "saldo-pos" : v < 0 ? "saldo-neg" : "";
+      const txt = v > 0 ? `le deben ${fmtMonto(v)}` : v < 0 ? `debe ${fmtMonto(-v)}` : "al día";
+      return `<div class="inicio-item"><span class="inicio-item__t">${esc(n)}</span><span class="inicio-item__v ${cls}">${txt}</span></div>`;
+    }).join("");
+  }
+
+  // --- total gastado (sin contar pagos entre personas) ---
+  const total = spGastos.filter((g) => g.tipo !== "pago")
+    .reduce((a, g) => a + (Number(g.monto) || 0), 0);
+  $("splid-total").textContent = total ? `Total ${fmtMonto(total)}` : "";
+
+  // --- para saldar ---
+  const trs = splidTransferencias(bal);
+  const tBox = $("splid-saldar");
+  tBox.innerHTML = "";
+  if (!trs.length) {
+    tBox.innerHTML = `<p class="inicio-vacio">Todo saldado ✓</p>`;
+  } else {
+    trs.forEach((t) => {
+      const row = document.createElement("div");
+      row.className = "saldar-row";
+      row.innerHTML = `<span class="txt"><b>${esc(t.de)}</b> paga a <b>${esc(t.a)}</b> ${fmtMonto(t.monto)}</span>
+        <button class="saldar-btn" type="button">Saldar</button>`;
+      row.querySelector(".saldar-btn").onclick = () => {
+        if (!confirm(`¿Registrar que ${t.de} pagó ${fmtMonto(t.monto)} a ${t.a}?`)) return;
+        addDoc(collection(db, "splid_gastos"), {
+          titulo: "Pago", monto: t.monto, pagadoPor: t.de, para: [t.a], tipo: "pago",
+          createdBy: nombreCorto(), createdAt: serverTimestamp()
+        });
+      };
+      tBox.appendChild(row);
+    });
+  }
+
+  // --- movimientos ---
+  const list = $("splid-gastos");
+  list.innerHTML = "";
+  spGastos.forEach((g) => {
+    const esPago = g.tipo === "pago";
+    const li = document.createElement("li");
+    li.className = "cuenta" + (esPago ? " gasto-pago" : "");
+    const fecha = g.createdAt && g.createdAt.toDate
+      ? g.createdAt.toDate().toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit" }) : "";
+    li.innerHTML = `
+      <div class="cuenta-body">
+        <div class="cuenta-nombre"></div>
+        <div class="cuenta-meta"><span class="quien"></span>${fecha ? `<span>· ${fecha}</span>` : ""}</div>
+      </div>
+      <span class="cuenta-monto">${fmtMonto(g.monto)}</span>
+      <button class="cuenta-del" data-act="del" aria-label="Eliminar">${SVG_TRASH}</button>
+    `;
+    li.querySelector(".cuenta-nombre").textContent = g.titulo || (esPago ? "Pago" : "Gasto");
+    li.querySelector(".quien").textContent = esPago
+      ? `${g.pagadoPor} → ${(g.para || []).join(", ")}`
+      : `Pagó ${g.pagadoPor} · entre ${(g.para || []).join(", ")}`;
+    li.querySelector('[data-act="del"]').onclick = () => {
+      if (confirm("¿Eliminar este movimiento?")) deleteDoc(doc(db, "splid_gastos", g.id));
+    };
+    list.appendChild(li);
+  });
+  $("splid-empty").classList.toggle("hidden", spGastos.length > 0);
+}
+
+// agregar persona
+$("splid-persona-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const nombre = $("splid-persona").value.trim();
+  if (!nombre) return;
+  const existe = spPersonas.some((p) => p.nombre.toLowerCase() === nombre.toLowerCase());
+  e.target.reset();
+  if (existe) return;
+  await addDoc(collection(db, "splid_personas"), { nombre, createdAt: serverTimestamp() });
+});
+
+// modal de gasto
+let splidPara = new Set();
+function abrirSplidModal() {
+  const nombres = spPersonas.map((p) => p.nombre);
+  if (nombres.length < 2) { alert("Agrega al menos dos personas para dividir gastos."); return; }
+  $("splid-titulo").value = "";
+  $("splid-monto").value = "";
+  $("splid-error").textContent = "";
+  const sel = $("splid-pagador");
+  sel.innerHTML = "";
+  const yo = nombreCorto().toLowerCase();
+  nombres.forEach((n) => {
+    const o = document.createElement("option");
+    o.value = n; o.textContent = n;
+    if (n.toLowerCase() === yo) o.selected = true;
+    sel.appendChild(o);
+  });
+  splidPara = new Set(nombres);
+  const box = $("splid-para");
+  box.innerHTML = "";
+  nombres.forEach((n) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip toggle sel";
+    b.textContent = n;
+    b.onclick = () => {
+      if (splidPara.has(n)) splidPara.delete(n); else splidPara.add(n);
+      b.classList.toggle("sel", splidPara.has(n));
+    };
+    box.appendChild(b);
+  });
+  $("splid-modal").classList.remove("hidden");
+}
+function cerrarSplidModal() { $("splid-modal").classList.add("hidden"); }
+
+$("splid-nuevo").addEventListener("click", abrirSplidModal);
+$("splid-cancelar").addEventListener("click", cerrarSplidModal);
+$("splid-modal").addEventListener("click", (e) => { if (e.target.id === "splid-modal") cerrarSplidModal(); });
+$("splid-guardar").addEventListener("click", async () => {
+  const titulo = $("splid-titulo").value.trim();
+  const monto = Number($("splid-monto").value);
+  const pagadoPor = $("splid-pagador").value;
+  const para = [...splidPara];
+  if (!titulo) { $("splid-error").textContent = "Escribe en qué se gastó."; return; }
+  if (!monto || monto <= 0) { $("splid-error").textContent = "Ingresa un monto válido."; return; }
+  if (!para.length) { $("splid-error").textContent = "Elige entre quiénes se divide."; return; }
+  cerrarSplidModal();
+  await addDoc(collection(db, "splid_gastos"), {
+    titulo, monto, pagadoPor, para, tipo: "gasto",
+    createdBy: nombreCorto(), createdAt: serverTimestamp()
+  });
+});
 
 // ============================================================
 //  SERVICE WORKER (PWA)
