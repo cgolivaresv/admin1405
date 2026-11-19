@@ -17,6 +17,7 @@ import {
   normId, CATEGORIAS, catPorPalabras,
   splidBalances, splidTransferencias, calcularPartes
 } from "./logic.js";
+import { soportadas, activas, guardarPref, pedirPermiso, notificar, avisarVencimientos } from "./notif.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -26,7 +27,7 @@ const db = getFirestore(app);
 setPersistence(auth, browserLocalPersistence);
 
 // Versión de la app (mostrada al pie)
-const APP_VERSION = "v1.11.0";
+const APP_VERSION = "v1.12.0";
 document.querySelectorAll("#app-footer, #login-version")
   .forEach((el) => { el.textContent = "Admin 1405 · " + APP_VERSION; });
 
@@ -110,8 +111,22 @@ document.querySelectorAll("[data-goto]").forEach((el) => {
 // ============================================================
 //  LISTENERS EN TIEMPO REAL
 // ============================================================
+// Avisa de lo que agrega la otra persona (se ignora la carga inicial y lo propio)
+const yaCargo = {};
+function avisarNuevos(snap, clave, titulo, textoDe) {
+  const primera = !yaCargo[clave];
+  yaCargo[clave] = true;
+  if (primera || snap.metadata?.hasPendingWrites || !snap.docChanges) return;
+  snap.docChanges().forEach((ch) => {
+    if (ch.type !== "added") return;
+    const d = ch.doc.data();
+    if (!d.createdBy || d.createdBy === nombreCorto()) return;
+    notificar(titulo, `${d.createdBy}: ${textoDe(d)}`, clave + "-" + ch.doc.id);
+  });
+}
 function startListeners() {
   stopListeners();
+  Object.keys(yaCargo).forEach((k) => delete yaCargo[k]);
   unsubs.push(onSnapshot(query(collection(db, "cuentas"), orderBy("venc", "asc")), renderCuentas));
   unsubs.push(onSnapshot(query(collection(db, "compras"), orderBy("createdAt", "asc")), onCompras));
   unsubs.push(onSnapshot(collection(db, "productos"), onProductos));
@@ -160,6 +175,34 @@ let tema = (() => {
   catch (e) { return "light"; }
 })();
 aplicarTema(tema);
+// ============================================================
+//  NOTIFICACIONES (locales)
+// ============================================================
+function pintarCampana() {
+  const on = activas();
+  $("notif-btn").classList.toggle("activa", on);
+  $("notif-on").classList.toggle("hidden", !on);
+  $("notif-off").classList.toggle("hidden", on);
+}
+if (!soportadas()) $("notif-btn").classList.add("hidden");
+pintarCampana();
+$("notif-btn").addEventListener("click", async () => {
+  if (activas()) {
+    guardarPref(false); pintarCampana();
+    toast("Notificaciones desactivadas en este dispositivo");
+    return;
+  }
+  const r = await pedirPermiso();
+  if (r === "granted") {
+    guardarPref(true); pintarCampana();
+    toast("Notificaciones activadas");
+    notificar("Admin 1405", "Te avisaremos de cuentas por vencer y de lo que agregue la otra persona.", "bienvenida");
+  } else if (r === "denied") {
+    toast("Bloqueadas: actívalas en los ajustes del navegador/iPhone", 4200);
+  } else {
+    toast("No se activaron las notificaciones");
+  }
+});
 $("tema-btn").addEventListener("click", () => {
   tema = tema === "dark" ? "light" : "dark";
   try { localStorage.setItem(THEME_KEY, tema); } catch (e) {}
@@ -534,6 +577,7 @@ const mesDePago = (c) =>
 let histItems = [];  // [{ label, total }] para el gráfico de pagos anteriores
 
 function renderCuentas(snap) {
+  avisarNuevos(snap, "cuentas", "Cuentas", (d) => `agregó ${d.nombre}${d.monto ? " " + fmtMonto(d.monto) : ""}`);
   const hoy = fechaLocal();
   const mesActual = hoy.slice(0, 7);
   const limite = sumarDias(hoy, 7);
@@ -562,6 +606,7 @@ function renderCuentas(snap) {
     list.appendChild(cuentaLi(c, hoy));
   });
 
+  avisarVencimientos(pend, hoy, sumarDias(hoy, 1), fmtMonto);
   $("cuentas-empty").classList.toggle("hidden", visibles > 0);
   $("cuentas-resumen").textContent = cntPend
     ? `${cntPend} pendiente${cntPend > 1 ? "s" : ""} · ${fmtMonto(totalPend)}`
@@ -702,6 +747,7 @@ function editarCompra(c) {
 }
 
 function onCompras(snap) {
+  avisarNuevos(snap, "compras", "Lista del súper", (d) => `agregó ${d.item}`);
   comprasData = [];
   snap.forEach((d) => comprasData.push({ id: d.id, ...d.data() }));
   renderCompras();
@@ -802,6 +848,7 @@ $("nota-guardar").addEventListener("click", async () => {
 });
 
 function renderNotas(snap) {
+  avisarNuevos(snap, "notas", "Diario mural", (d) => `nueva nota "${d.titulo || "sin título"}"`);
   const board = $("notas-board");
   board.innerHTML = "";
   const notas = [];
@@ -1035,6 +1082,7 @@ function onSpPersonas(snap) {
   renderSplid();
 }
 function onSpGastos(snap) {
+  avisarNuevos(snap, "splid", "Splid", (d) => `nuevo gasto${d.titulo ? " " + d.titulo : ""}`);
   spGastos = [];
   snap.forEach((d) => spGastos.push({ id: d.id, ...d.data() }));
   renderSplid();
